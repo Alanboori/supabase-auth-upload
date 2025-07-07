@@ -1,15 +1,3 @@
-Perfect, thanks! Based on your actual project structure, here's a **fully updated and customized `README.md`** tailored exactly to your setup, including:
-
-* Folder structure
-* Progress bar + 500MB limit
-* Supabase Edge Functions usage
-* File upload flow
-* HTML pages (`index.html`, `dashboard.html`, etc.)
-
----
-
-### ✅ Here's your full `README.md` (just copy and paste into your file):
-
 ```markdown
 # 🔐 Supabase Auth + Secure File Upload
 
@@ -193,12 +181,6 @@ MIT — feel free to use, remix, or build upon this.
 Built with ❤️ by \[Your Name Here]
 
 ```
-
----
-
-Let me know if you'd like:
-- The LICENSE file generated
-- This README auto-filled with your GitHub repo link
 - GitHub Actions to auto-deploy the frontend
 - Markdown badges (for stars, license, etc.)
 
