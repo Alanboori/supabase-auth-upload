@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>User Dashboard</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 20px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    header h1 {
+      margin: 0;
+      color: #333;
+    }
+    #logoutBtn {
+      background: #d33;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #uploadForm {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    #uploadForm input[type="file"] {
+      flex: 1;
+    }
+    #uploadBtn {
+      background: #2575fc;
+      color: white;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #uploadBtn:disabled {
+      background: #a0c1ff;
+      cursor: not-allowed;
+    }
+    #message {
+      margin: 10px 0;
+      font-weight: bold;
+      text-align: center;
+    }
+    #message.error { color: crimson; }
+    #message.success { color: green; }
+
+    /* Storage usage bar */
+    .quota-bar-wrapper {
+      margin: 10px 0 20px;
+      background: #eee;
+      border-radius: 8px;
+      overflow: hidden;
+      height: 20px;
+    }
+    .quota-bar {
+      background: #2575fc;
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .quota-text {
+      text-align: right;
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background: #2575fc;
+      color: white;
+    }
+    tr:hover {
+      background: #f0f8ff;
+    }
+    .deleteBtn {
+      background: #d9534f;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>Dashboard</h1>
+      <div id="userInfo" style="font-size: 14px; color: #555;"></div>
+    </div>
+    <button id="logoutBtn">Logout</button>
+  </header>
+  
+  <div class="quota-text" id="quotaText">Used: 0 MB of 500 MB</div>
+  <div class="quota-bar-wrapper">
+    <div class="quota-bar" id="quotaBar"></div>
+  </div>
+
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" id="fileInput" />
+    <button type="submit" id="uploadBtn">Upload File</button>
+  </form>
+
+  <div id="message" role="alert" aria-live="polite"></div>
+
+  <table id="filesTable" aria-label="User Files">
+    <thead>
+      <tr>
+        <th>Filename</th>
+        <th>Uploaded At</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Filled by script -->
+    </tbody>
+  </table>
+
+  <script>
+(() => {
+  const ACCESS_TOKEN = localStorage.getItem('sb_access_token');
+  const BASE_FUNCTION_URL = 'https://ctrdpxzkrqfxobaopecb.supabase.co/functions/v1';
+  const userInfoEl = document.getElementById('userInfo');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const uploadForm = document.getElementById('uploadForm');
+  const fileInput = document.getElementById('fileInput');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const messageEl = document.getElementById('message');
+  const filesTableBody = document.querySelector('#filesTable tbody');
+  const quotaBar = document.getElementById('quotaBar');
+  const quotaText = document.getElementById('quotaText');
+
+  const MAX_BYTES = 500 * 1024 * 1024; // 500 MB
+  let currentUsage = 0;
+
+  if (!ACCESS_TOKEN) {
+    window.location.href = 'index.html';
+    return;
+  }
+
+  logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('sb_access_token');
+    window.location.href = 'index.html';
+  });
+
+  function showMessage(msg, type = 'success') {
+    messageEl.textContent = msg;
+    messageEl.className = type;
+  }
+
+  function updateQuotaBar(bytesUsed) {
+    currentUsage = bytesUsed;
+    const percent = Math.min((bytesUsed / MAX_BYTES) * 100, 100);
+    quotaBar.style.width = `${percent}%`;
+    quotaText.textContent = `Used: ${(bytesUsed / (1024 * 1024)).toFixed(2)} MB of 500 MB`;
+    uploadBtn.disabled = bytesUsed >= MAX_BYTES;
+    quotaBar.style.background = percent < 70
+      ? '#2575fc'
+      : percent < 90
+      ? '#ffc107'
+      : '#dc3545';
+  }
+
+    async function fetchUsername() {
+  try {
+    const res = await fetch('https://ctrdpxzkrqfxobaopecb.supabase.co/functions/v1/get-user', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+      },
+    });
+
+    const data = await res.json();
+
+      if (!res.ok) {
+        userInfoEl.textContent = `⚠️ ${data.error || 'Failed to get username'}`;
+        return;
+      }
+
+      if (data.username) {
+        userInfoEl.textContent = `Welcome, ${data.username}`;
+      } else {
+        userInfoEl.textContent = `Welcome`;
+      }
+
+    } catch (err) {
+      userInfoEl.textContent = `⚠️ ${err.message}`;
+    }
+  }
+
+
+  async function fetchFiles() {
+    try {
+      const res = await fetch(`${BASE_FUNCTION_URL}/list`, {
+        headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
+      });
+      if (!res.ok) throw new Error(`Failed to fetch files (${res.status})`);
+      const data = await res.json();
+      populateFilesTable(data.files || []);
+      calculateUsage(data.files || []);
+    } catch (err) {
+      showMessage(`Failed to fetch files: ${err.message}`, 'error');
+    }
+  }
+
+  function calculateUsage(files) {
+    const totalBytes = files.reduce((sum, file) => sum + (file.metadata?.size || 0), 0);
+    updateQuotaBar(totalBytes);
+  }
+
+  function populateFilesTable(files) {
+    filesTableBody.innerHTML = '';
+    if (!files.length) {
+      filesTableBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No files uploaded.</td></tr>';
+      return;
+    }
+
+    files.forEach(file => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${file.name}</td>
+        <td>${new Date(file.created_at).toLocaleString()}</td>
+        <td><button class="deleteBtn" onclick="deleteFile('${file.name}')">Delete</button></td>
+      `;
+      filesTableBody.appendChild(tr);
+    });
+  }
+
+  window.deleteFile = async function(filename) {
+    if (!confirm(`Delete "${filename}"?`)) return;
+
+    try {
+      const res = await fetch(`${BASE_FUNCTION_URL}/delete`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ filename }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || `Failed to delete file (${res.status})`);
+      }
+      showMessage('File deleted', 'success');
+      fetchFiles();
+    } catch (err) {
+      showMessage(err.message, 'error');
+    }
+  };
+
+  uploadForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const file = fileInput.files[0];
+    if (!file) return showMessage('Select a file.', 'error');
+    if (currentUsage + file.size > MAX_BYTES) return showMessage('Quota exceeded (500MB max)', 'error');
+
+    uploadBtn.disabled = true;
+    showMessage('Uploading...');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch(`${BASE_FUNCTION_URL}/upload`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${ACCESS_TOKEN}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      showMessage('Upload successful', 'success');
+      fileInput.value = '';
+      fetchFiles();
+    } catch (err) {
+      showMessage(err.message, 'error');
+    } finally {
+      uploadBtn.disabled = false;
+    }
+  });
+
+  // Initialize dashboard
+  fetchUsername();
+  fetchFiles();
+})();
+  </script>
+
+</body>
+</html>

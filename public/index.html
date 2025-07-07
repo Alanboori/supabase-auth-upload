@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login / Signup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #ece9e6, #ffffff);
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      width: 360px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+    .tabs {
+      display: flex;
+      background: #f0f0f0;
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 16px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #444;
+      user-select: none;
+      transition: background 0.3s, color 0.3s;
+    }
+    .tab.active {
+      background: linear-gradient(45deg, #6a11cb, #2575fc);
+      color: white;
+    }
+    form {
+      padding: 24px;
+    }
+    form > * + * {
+      margin-top: 14px;
+    }
+    label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+      color: #333;
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #6a11cb;
+      box-shadow: 0 0 5px rgba(106,17,203,0.5);
+    }
+    .password-wrapper {
+      position: relative;
+    }
+    .toggle-password {
+      position: absolute;
+      top: 50%;
+      right: 14px;
+      transform: translateY(-50%);
+      cursor: pointer;
+      font-size: 1.1rem;
+      color: #888;
+    }
+    button {
+      width: 100%;
+      background: #2575fc;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 12px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover:not(:disabled) {
+      background: #1b54c8;
+    }
+    button:disabled {
+      background: #99b8f7;
+      cursor: not-allowed;
+    }
+    .error-message {
+      color: #d33;
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .success-message {
+      color: #2d7a2d;
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .forgot-link {
+      display: block;
+      text-align: right;
+      margin-top: 12px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      color: #2575fc;
+      text-decoration: none;
+    }
+    .forgot-link:hover {
+      text-decoration: underline;
+    }
+    @media (max-width: 400px) {
+      .container {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" data-tab="login">Login</div>
+    <div class="tab" data-tab="signup">Signup</div>
+  </div>
+
+  <!-- Login Form -->
+  <form id="login-form" autocomplete="off" novalidate>
+    <div id="login-error" class="error-message" role="alert" aria-live="assertive"></div>
+
+    <label for="login-email">Email</label>
+    <input type="email" id="login-email" required placeholder="you@example.com" />
+
+    <label for="login-password">Password</label>
+    <div class="password-wrapper">
+      <input type="password" id="login-password" required placeholder="Your password" />
+      <span class="toggle-password" data-target="login-password">&#128065;</span>
+    </div>
+
+    <button type="submit" id="login-submit">Log In</button>
+    <a href="forgot-password.html" class="forgot-link">Forgot password?</a>
+  </form>
+
+  <!-- Signup Form -->
+  <form id="signup-form" style="display:none;" autocomplete="off" novalidate>
+    <div id="signup-error" class="error-message" role="alert" aria-live="assertive"></div>
+    <div id="signup-success" class="success-message" role="alert" aria-live="polite"></div>
+
+    <label for="signup-email">Email</label>
+    <input type="email" id="signup-email" required placeholder="you@example.com" />
+
+    <label for="signup-username">Username</label>
+    <input type="text" id="signup-username" required placeholder="Choose a username" />
+
+    <label for="signup-fullname">Full Name</label>
+    <input type="text" id="signup-fullname" placeholder="Your full name" />
+
+    <label for="signup-password">Password</label>
+    <div class="password-wrapper">
+      <input type="password" id="signup-password" required placeholder="Create a password" />
+      <span class="toggle-password" data-target="signup-password">&#128065;</span>
+    </div>
+
+    <label for="signup-password-confirm">Confirm Password</label>
+    <div class="password-wrapper">
+      <input type="password" id="signup-password-confirm" required placeholder="Confirm password" />
+      <span class="toggle-password" data-target="signup-password-confirm">&#128065;</span>
+    </div>
+
+    <button type="submit" id="signup-submit">Sign Up</button>
+  </form>
+</div>
+
+<script>
+  (() => {
+    const BASE_URL = 'https://ctrdpxzkrqfxobaopecb.supabase.co/functions/v1';
+    const tabs = document.querySelectorAll('.tab');
+    const loginForm = document.getElementById('login-form');
+    const signupForm = document.getElementById('signup-form');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        loginForm.style.display = tab.dataset.tab === 'login' ? 'block' : 'none';
+        signupForm.style.display = tab.dataset.tab === 'signup' ? 'block' : 'none';
+        clearMessages();
+      });
+    });
+
+    document.querySelectorAll('.toggle-password').forEach(toggle => {
+      toggle.addEventListener('click', () => {
+        const input = document.getElementById(toggle.dataset.target);
+        if (input) input.type = input.type === 'password' ? 'text' : 'password';
+      });
+    });
+
+    function clearMessages() {
+      ['login-error', 'signup-error', 'signup-success'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '';
+      });
+    }
+
+    function showMessage(id, message) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = message;
+    }
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearMessages();
+
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      if (!email || !password) {
+        showMessage('login-error', 'Please enter email and password.');
+        return;
+      }
+
+      const loginBtn = document.getElementById('login-submit');
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Logging in...';
+
+      try {
+        const res = await fetch(`${BASE_URL}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showMessage('login-error', data.error || 'Login failed.');
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Log In';
+          return;
+        }
+
+        localStorage.setItem('sb_access_token', data.access_token);
+        window.location.href = 'dashboard.html';
+
+      } catch (err) {
+        showMessage('login-error', 'Network error, try again.');
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Log In';
+      }
+    });
+
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearMessages();
+
+      const email = document.getElementById('signup-email').value.trim();
+      const username = document.getElementById('signup-username').value.trim();
+      const full_name = document.getElementById('signup-fullname').value.trim();
+      const password = document.getElementById('signup-password').value;
+      const confirm = document.getElementById('signup-password-confirm').value;
+
+      if (!email || !username || !password || !confirm) {
+        showMessage('signup-error', 'Please fill all required fields.');
+        return;
+      }
+
+      if (password !== confirm) {
+        showMessage('signup-error', 'Passwords do not match.');
+        return;
+      }
+
+      const signupBtn = document.getElementById('signup-submit');
+      signupBtn.disabled = true;
+      signupBtn.textContent = 'Signing up...';
+
+      try {
+        const res = await fetch(`${BASE_URL}/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, username, full_name }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showMessage('signup-error', data.error || 'Signup failed.');
+          signupBtn.disabled = false;
+          signupBtn.textContent = 'Sign Up';
+          return;
+        }
+
+        showMessage('signup-success', '✅ Signup successful! You can now log in.');
+        signupBtn.disabled = false;
+        signupBtn.textContent = 'Sign Up';
+
+      } catch (err) {
+        showMessage('signup-error', 'Network error, try again.');
+        signupBtn.disabled = false;
+        signupBtn.textContent = 'Sign Up';
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>
