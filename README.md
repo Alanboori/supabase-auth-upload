@@ -178,11 +178,4 @@ MIT — feel free to use, remix, or build upon this.
 
 ## 👨‍💻 Author
 
-Built with ❤️ by \[Your Name Here]
-
-```
-- GitHub Actions to auto-deploy the frontend
-- Markdown badges (for stars, license, etc.)
-
-Happy uploading!
-```
+Built with ❤️ by \Adam Abdullah Alanboori
